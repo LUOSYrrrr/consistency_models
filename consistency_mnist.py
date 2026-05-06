@@ -56,7 +56,7 @@ class Config:
     sigma_data: float = 0.5  # MNIST 归一化到 [-1, 1] 后大致的标准差
     rho: float = 7.0
 
-    # CT 课程（论文 Eq.13/14）
+    # CT 课程（论文 Appendix C：N(k) 与 μ(k) schedule）
     s_0: int = 2          # 起点离散化数 N(0)
     s_1: int = 150        # 终点离散化数 N(K)
     mu_0: float = 0.95    # μ 计算用的参考 EMA 衰减
@@ -267,14 +267,14 @@ def karras_sigmas(n: int, sigma_min: float, sigma_max: float, rho: float, device
 
 
 def n_schedule(step: int, total_steps: int, s0: int, s1: int) -> int:
-    """论文 Eq.13：N(k) 从 s0 平滑增长到 s1+1（取整后离散化数）。"""
+    """论文 Appendix C（Schedule Functions for CT）：N(k) 从 s0 平滑增长到 s1+1（取整后离散化数）。"""
     progress = step / max(total_steps - 1, 1)
     n = math.ceil(math.sqrt(progress * ((s1 + 1) ** 2 - s0**2) + s0**2) - 1) + 1
     return max(n, s0)
 
 
 def mu_schedule(n_k: int, mu_0: float, s_0: int) -> float:
-    """论文 Eq.14：μ(k) = exp(s_0 · log(μ_0) / N(k))。N 越大 μ 越大（更慢的 EMA）。"""
+    """论文 Appendix C：μ(k) = exp(s_0 · log(μ_0) / N(k))。N 越大 μ 越大（更慢的 EMA）。"""
     return math.exp(s_0 * math.log(mu_0) / n_k)
 
 
