@@ -143,7 +143,7 @@ class Upsample(nn.Module):
 
 
 class UNet(nn.Module):
-    """28x28 MNIST 用的小 UNet。约 2-3M 参数，16GB 显存非常宽裕。"""
+    """28x28 MNIST 用的小 UNet。默认 ~6.5M 参数，16GB 显存非常宽裕。"""
 
     def __init__(self, cfg: Config) -> None:
         super().__init__()

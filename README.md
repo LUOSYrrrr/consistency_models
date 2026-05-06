@@ -3,17 +3,21 @@
 [`consistency_mnist.py`](consistency_mnist.py) 是 Song et al., *Consistency Models* (arXiv:2303.01469) 中
 **Consistency Training (CT，无教师版)** 的一份单文件干净实现，专门跑在 MNIST 上。
 
+> **关于本仓库**：本仓 fork 自 [openai/consistency_models](https://github.com/openai/consistency_models)。
+> `main` 分支只保留为面试交付的 MNIST 单文件实现 + 训练报告；
+> 原作者的多模块实现（`cm/`、`scripts/`、`evaluations/` 等）完整保存在 [`upstream`](../../tree/upstream) 分支，未做改动。
 
 ---
 
 ## 1. 文件清单
 
 ```
-consistency_mnist.py        # 全部代码（UNet + CM 参数化 + 课程 + loss + 采样 + 训练循环）
-README.md          # 本文件
+consistency_mnist.py            # 全部代码（UNet + CM 参数化 + 课程 + loss + 采样 + 训练循环）
+README.md                       # 本文件（含训练报告）
+runs/ct_mnist/samples/*.png     # 5 张代表性采样图（训练进度对比 + 最终 NFE=1/2）
 ```
 
-无外部脚本、无 cm/ 依赖。
+单文件，无外部脚本依赖（`cm/` 等模块只在 `upstream` 分支里）。
 
 ---
 
@@ -151,14 +155,16 @@ NFE=1 训练进度（每张为 8×8 = 64 个独立采样的 grid）：
 
 ### 与官方实现的对照
 
-| 关注点 | 官方多模块 | 本文件 |
+下表中带 `cm/` / `scripts/` 前缀的路径指 [`upstream`](../../tree/upstream) 分支里的原作者代码（`main` 分支不含这些文件）。
+
+| 关注点 | 官方多模块（`upstream` 分支） | 本文件 |
 |---|---|---|
-| 主入口 | `scripts/cm_train.py` | `train()` |
-| 训练循环 | `cm/train_util.py: CMTrainLoop` | `train()` 内 for-loop |
-| 网络 | `cm/unet.py: UNetModel`（带 attention，~50M 参数） | 本文件内小 UNet（~2-3M 参数） |
-| Loss / 参数化 | `cm/karras_diffusion.py: consistency_losses` | `ct_loss()` |
-| EMA & N 调度 | `cm/script_util.py: create_ema_and_scales_fn` | `n_schedule()` / `mu_schedule()` |
-| 数据 | `cm/image_datasets.py`（webdataset） | `torchvision.datasets.MNIST` |
+| 主入口 | [`scripts/cm_train.py`](../../blob/upstream/scripts/cm_train.py) | `train()` |
+| 训练循环 | [`cm/train_util.py`](../../blob/upstream/cm/train_util.py): `CMTrainLoop` | `train()` 内 for-loop |
+| 网络 | [`cm/unet.py`](../../blob/upstream/cm/unet.py): `UNetModel`（带 attention，~50M 参数） | 本文件内小 UNet（~6.5M 参数） |
+| Loss / 参数化 | [`cm/karras_diffusion.py`](../../blob/upstream/cm/karras_diffusion.py): `consistency_losses` | `ct_loss()` |
+| EMA & N 调度 | [`cm/script_util.py`](../../blob/upstream/cm/script_util.py): `create_ema_and_scales_fn` | `n_schedule()` / `mu_schedule()` |
+| 数据 | [`cm/image_datasets.py`](../../blob/upstream/cm/image_datasets.py)（webdataset） | `torchvision.datasets.MNIST` |
 | 分布式 | `torch.distributed` + fp16 | 单卡 fp32 |
 | 训练模式 | CD / CT / progdist 三选一 | 仅 CT |
 
