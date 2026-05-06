@@ -1,93 +1,173 @@
-# Consistency Models
+# Consistency Training for MNIST — 单文件实现
 
-This repository contains the codebase for [Consistency Models](https://arxiv.org/abs/2303.01469), implemented using PyTorch for conducting large-scale experiments on ImageNet-64, LSUN Bedroom-256, and LSUN Cat-256. We have based our repository on [openai/guided-diffusion](https://github.com/openai/guided-diffusion), which was initially released under the MIT license. Our modifications have enabled support for consistency distillation, consistency training, as well as several sampling and editing algorithms discussed in the paper.
+[`consistency_mnist.py`](consistency_mnist.py) 是 Song et al., *Consistency Models* (arXiv:2303.01469) 中
+**Consistency Training (CT，无教师版)** 的一份单文件干净实现，专门跑在 MNIST 上。
 
-The repository for CIFAR-10 experiments is in JAX and can be found at [openai/consistency_models_cifar10](https://github.com/openai/consistency_models_cifar10).
 
-# Pre-trained models
+---
 
-We have released checkpoints for the main models in the paper. Before using these models, please review the corresponding [model card](model-card.md) to understand the intended use and limitations of these models.
+## 1. 文件清单
 
-Here are the download links for each model checkpoint:
-
- * EDM on ImageNet-64: [edm_imagenet64_ema.pt](https://openaipublic.blob.core.windows.net/consistency/edm_imagenet64_ema.pt)
- * CD on ImageNet-64 with l2 metric: [cd_imagenet64_l2.pt](https://openaipublic.blob.core.windows.net/consistency/cd_imagenet64_l2.pt)
- * CD on ImageNet-64 with LPIPS metric: [cd_imagenet64_lpips.pt](https://openaipublic.blob.core.windows.net/consistency/cd_imagenet64_lpips.pt)
- * CT on ImageNet-64: [ct_imagenet64.pt](https://openaipublic.blob.core.windows.net/consistency/ct_imagenet64.pt)
- * EDM on LSUN Bedroom-256: [edm_bedroom256_ema.pt](https://openaipublic.blob.core.windows.net/consistency/edm_bedroom256_ema.pt)
- * CD on LSUN Bedroom-256 with l2 metric: [cd_bedroom256_l2.pt](https://openaipublic.blob.core.windows.net/consistency/cd_bedroom256_l2.pt)
- * CD on LSUN Bedroom-256 with LPIPS metric: [cd_bedroom256_lpips.pt](https://openaipublic.blob.core.windows.net/consistency/cd_bedroom256_lpips.pt)
- * CT on LSUN Bedroom-256: [ct_bedroom256.pt](https://openaipublic.blob.core.windows.net/consistency/ct_bedroom256.pt)
- * EDM on LSUN Cat-256: [edm_cat256_ema.pt](https://openaipublic.blob.core.windows.net/consistency/edm_cat256_ema.pt)
- * CD on LSUN Cat-256 with l2 metric: [cd_cat256_l2.pt](https://openaipublic.blob.core.windows.net/consistency/cd_cat256_l2.pt)
- * CD on LSUN Cat-256 with LPIPS metric: [cd_cat256_lpips.pt](https://openaipublic.blob.core.windows.net/consistency/cd_cat256_lpips.pt)
- * CT on LSUN Cat-256: [ct_cat256.pt](https://openaipublic.blob.core.windows.net/consistency/ct_cat256.pt)
-
-# Dependencies
-
-To install all packages in this codebase along with their dependencies, run
-```sh
-pip install -e .
+```
+consistency_mnist.py        # 全部代码（UNet + CM 参数化 + 课程 + loss + 采样 + 训练循环）
+README.md          # 本文件
 ```
 
-To install with Docker, run the following commands:
-```sh
-cd docker && make build && make run
+无外部脚本、无 cm/ 依赖。
+
+---
+
+## 2. 环境
+
+- Python ≥ 3.9
+- PyTorch ≥ 2.0（CUDA 版本任意；MNIST 单卡 16GB 显存绰绰有余）
+- torchvision（数据集 + `save_image`）
+
+```bash
+pip install torch torchvision
 ```
 
-# Model training and sampling
+可选（算 FID 时才需要）：
 
-We provide examples of EDM training, consistency distillation, consistency training, single-step generation, and multistep generation in [scripts/launch.sh](scripts/launch.sh).
-
-# Evaluations
-
-To compare different generative models, we use FID, Precision, Recall, and Inception Score. These metrics can all be calculated using batches of samples stored in `.npz` (numpy) files. One can evaluate samples with [cm/evaluations/evaluator.py](evaluations/evaluator.py) in the same way as described in [openai/guided-diffusion](https://github.com/openai/guided-diffusion), with reference dataset batches provided therein.
-
-## Use in 🧨 diffusers
-
-Consistency models are supported in [🧨 diffusers](https://github.com/huggingface/diffusers) via the [`ConsistencyModelPipeline` class](https://huggingface.co/docs/diffusers/main/en/api/pipelines/consistency_models). Below we provide an example:
-
-```python
-import torch
-
-from diffusers import ConsistencyModelPipeline
-
-device = "cuda"
-# Load the cd_imagenet64_l2 checkpoint.
-model_id_or_path = "openai/diffusers-cd_imagenet64_l2"
-pipe = ConsistencyModelPipeline.from_pretrained(model_id_or_path, torch_dtype=torch.float16)
-pipe.to(device)
-
-# Onestep Sampling
-image = pipe(num_inference_steps=1).images[0]
-image.save("consistency_model_onestep_sample.png")
-
-# Onestep sampling, class-conditional image generation
-# ImageNet-64 class label 145 corresponds to king penguins
-
-class_id = 145
-class_id = torch.tensor(class_id, dtype=torch.long)
-
-image = pipe(num_inference_steps=1, class_labels=class_id).images[0]
-image.save("consistency_model_onestep_sample_penguin.png")
-
-# Multistep sampling, class-conditional image generation
-# Timesteps can be explicitly specified; the particular timesteps below are from the original Github repo.
-# https://github.com/openai/consistency_models/blob/main/scripts/launch.sh#L77
-image = pipe(timesteps=[22, 0], class_labels=class_id).images[0]
-image.save("consistency_model_multistep_sample_penguin.png")
+```bash
+pip install torchmetrics[image]
 ```
-You can further speed up the inference process by using `torch.compile()` on `pipe.unet` (only supported from PyTorch 2.0). For more details, please check out the [official documentation](https://huggingface.co/docs/diffusers/main/en/api/pipelines/consistency_models). This support was contributed to 🧨 diffusers by [dg845](https://github.com/dg845) and [ayushtues](https://github.com/ayushtues).
 
-# Citation
+---
 
-If you find this method and/or code useful, please consider citing
+## 3. 运行
 
-```bibtex
-@article{song2023consistency,
-  title={Consistency Models},
-  author={Song, Yang and Dhariwal, Prafulla and Chen, Mark and Sutskever, Ilya},
-  journal={arXiv preprint arXiv:2303.01469},
-  year={2023},
-}
+### 训练
+
+```bash
+python consistency_mnist.py train --out-dir runs/ct_mnist
 ```
+
+默认配置：`total_steps=50000, batch_size=256, lr=1e-4, loss=l2`。
+
+常用调整：
+
+```bash
+# 更长训练 + Pseudo-Huber loss（iCT 改进，更稳）
+python consistency_mnist.py train \
+    --out-dir runs/ct_mnist_huber \
+    --total-steps 100000 \
+    --loss-type huber
+
+# 显存紧张时减小 batch
+python consistency_mnist.py train --batch-size 128
+```
+
+### 采样
+
+训练完之后用 final checkpoint 出 NFE=1 / 2 / 4 三种步数的 grid：
+
+```bash
+python consistency_mnist.py sample \
+    --ckpt runs/ct_mnist/model_final.pt \
+    --out-dir runs/ct_mnist/samples_final \
+    --n-samples 64
+```
+
+---
+
+## 4. 期望产出
+
+训练目录结构：
+
+```
+runs/ct_mnist/
+├── samples/
+│   ├── step002000_nfe1.png    # 训练中每 2k step 的可视化
+│   ├── step002000_nfe2.png
+│   ├── ...
+│   └── step050000_nfe2.png
+├── model_step010000.pt        # 每 10k step 一个
+├── model_step020000.pt
+├── ...
+└── model_final.pt
+```
+
+训练效果（参考值，单卡 RTX 3090/4080 / 类似 16GB）：
+
+| step | NFE=1 视觉质量 | wall-clock |
+|---|---|---|
+| 2k   | 噪声 + 模糊轮廓 | ~3 min |
+| 10k  | 部分能认出数字 | ~15 min |
+| 25k  | 大部分清晰 | ~40 min |
+| 50k  | 清晰、多样性合理；NFE=2 更锐 | ~1.5 h |
+
+CPU 上能跑通（用作 smoke test），但完整训练只在 GPU 上现实。
+
+---
+
+## 4.1 本仓实测结果
+
+单卡 **RTX 4070 Ti SUPER 16GB**，默认配置（`base_channels=64`, batch=256, L2 loss），50k step 用时约 **2.4h**，模型 6.55M 参数。
+
+NFE=1 训练进度（每张为 8×8 = 64 个独立采样的 grid）：
+
+| step 2k | step 10k | step 24k | step 50k |
+| :-: | :-: | :-: | :-: |
+| ![2k](runs/ct_mnist/samples/step002000_nfe1.png) | ![10k](runs/ct_mnist/samples/step010000_nfe1.png) | ![24k](runs/ct_mnist/samples/step024000_nfe1.png) | ![50k](runs/ct_mnist/samples/step050000_nfe1.png) |
+| 模糊灰团 | 数字轮廓出现 | 大部分能认 | 清晰多样 |
+
+最终 step 50k 的 NFE=2 对比（多调用一次 UNet 换更锐的图）：
+
+![nfe2](runs/ct_mnist/samples/step050000_nfe2.png)
+
+末段训练日志（loss 已稳定在 ~7e-4，N(k) 触顶 150，μ(k) 收敛到 0.9993）：
+
+```text
+[step  49000/50000] loss=0.0006  N(k)=150  μ(k)=0.9993
+[step  49500/50000] loss=0.0007  N(k)=151  μ(k)=0.9993
+[step  50000/50000] loss=0.0007  N(k)=151  μ(k)=0.9993
+[done] checkpoints in runs/ct_mnist
+```
+
+---
+
+## 5. 验收清单
+
+面试题"clean implementation of CT for MNIST"对应的最低交付标准：
+
+- [x] 单文件，无外部 cm/ 依赖
+- [x] CT（无教师）—— 不依赖预训练扩散模型
+- [x] 边界参数化 f_θ(x, σ_min) = x（精确，靠 c_skip / c_out）
+- [x] N(k)、μ(k) 自适应课程（论文 Eq.13/14）
+- [x] EMA target_model
+- [x] 1-step 与 multi-step 采样
+- [x] 中文注释 + 论文公式对应行号
+
+可选加分项：
+
+- [ ] FID 评估（接一下 `torchmetrics.image.FrechetInceptionDistance` 即可）
+- [ ] 类条件生成（MNIST 0-9）
+- [ ] iCT 的 lognormal 时间步采样（目前是 uniform）
+
+---
+
+## 6. 实现说明
+
+### 与官方实现的对照
+
+| 关注点 | 官方多模块 | 本文件 |
+|---|---|---|
+| 主入口 | `scripts/cm_train.py` | `train()` |
+| 训练循环 | `cm/train_util.py: CMTrainLoop` | `train()` 内 for-loop |
+| 网络 | `cm/unet.py: UNetModel`（带 attention，~50M 参数） | 本文件内小 UNet（~2-3M 参数） |
+| Loss / 参数化 | `cm/karras_diffusion.py: consistency_losses` | `ct_loss()` |
+| EMA & N 调度 | `cm/script_util.py: create_ema_and_scales_fn` | `n_schedule()` / `mu_schedule()` |
+| 数据 | `cm/image_datasets.py`（webdataset） | `torchvision.datasets.MNIST` |
+| 分布式 | `torch.distributed` + fp16 | 单卡 fp32 |
+| 训练模式 | CD / CT / progdist 三选一 | 仅 CT |
+
+### 设计决策
+
+1. **σ_data = 0.5**：MNIST 归一化到 [-1, 1] 后大致的标准差，沿用 EDM 默认。
+2. **UNet 输出层零初始化**：训练初期 F_θ ≈ 0，让 f_θ ≈ x（恒等），避免 loss 爆掉。
+3. **统一 z**：CT 的关键是同一 batch 同一 z 喂给 (σ_low, σ_high) 两个点 ——
+   官方代码里这步藏在 `euler_solver` 中（teacher_model is None 分支化简后等价于 x_t2 = x + z·σ_low）。
+4. **uniform N 采样**：n ~ U{0..N(k)-2}，没用 importance sampling。MNIST 上够用。
+5. **L2 默认**：忠于原 CT 论文。`--loss-type huber` 切到 iCT 的 Pseudo-Huber（c=0.00054·√D）。
+6. **多步采样**：用 Karras 间距取 NFE+1 个 σ，跳过最末端的 σ_min（sqrt(σ²-σ_min²) 在那里为 0，跳过节省一次 NFE）。

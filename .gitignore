@@ -19,3 +19,14 @@ dist/
 
 # Other
 *.DS_Store
+
+# CT MNIST experiment artifacts
+data/
+runs/*/model_*.pt
+runs/*/samples/step*.png
+!runs/ct_mnist/samples/step002000_nfe1.png
+!runs/ct_mnist/samples/step010000_nfe1.png
+!runs/ct_mnist/samples/step024000_nfe1.png
+!runs/ct_mnist/samples/step050000_nfe1.png
+!runs/ct_mnist/samples/step050000_nfe2.png
+
