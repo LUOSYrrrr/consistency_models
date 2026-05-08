@@ -135,7 +135,7 @@ I_0 (原图)                                I_0 (原图)
 
 ### 3.1 FPN — Feature Pyramid Networks for Object Detection (Lin et al., CVPR 2017)
 
-<img src="/Users/siyuanluo/STUDY/robot/consistency_models/literature/read/assets/image-20260508232545103.png" alt="image-20260508232545103" style="zoom:50%;" />
+<img src="./assets/image-20260508232545103.png" alt="image-20260508232545103" style="zoom:50%;" />
 
 > **图（FPN paper Fig.3）**：FPN 与已有 top-down 架构的对比。
 >
@@ -160,7 +160,7 @@ I_0 (原图)                                I_0 (原图)
 
 ### 3.2 LAPGAN — Deep Generative Image Models using a Laplacian Pyramid of Adversarial Networks (Denton et al., NeurIPS 2015)
 
-![image-20260508232805638](/Users/siyuanluo/STUDY/robot/consistency_models/literature/read/assets/image-20260508232805638.png)
+![image-20260508232805638](./assets/image-20260508232805638.png)
 
 > **图（LAPGAN paper Fig.1）**：采样流程，从右往左读。
 >
@@ -173,7 +173,7 @@ I_0 (原图)                                I_0 (原图)
 >
 > 严格的 coarse→fine 级联：每一层 $G_k$ 只生成"在已知低频之上的差分"，把全局生成拆成多个"已知低频，补高频"的简单子问题——这是 **residual supervision** 的核心思想。
 
-![image-20260508232813910](/Users/siyuanluo/STUDY/robot/consistency_models/literature/read/assets/image-20260508232813910.png)
+![image-20260508232813910](./assets/image-20260508232813910.png)
 
 > **图（LAPGAN paper Fig.2）**：训练流程，64×64 输入图像 I 为例。
 >
@@ -204,7 +204,7 @@ I_0 (原图)                                I_0 (原图)
 
 ### 3.3 MSG-GAN — Multi-Scale Gradients for Generative Adversarial Networks (Karnewar & Wang, CVPR 2020)
 
-![image-20260508233049964](/Users/siyuanluo/STUDY/robot/consistency_models/literature/read/assets/image-20260508233049964.png)
+![image-20260508233049964](./assets/image-20260508233049964.png)
 
 > **图（MSG-GAN paper Fig.2）**：MSG-GAN 完整架构（基于 ProGAN 的 base model 画的），可拆成三块看。
 >
